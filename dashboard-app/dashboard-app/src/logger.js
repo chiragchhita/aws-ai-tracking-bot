@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT-0.
  */
 
-'use strict';
+/* eslint-disable no-underscore-dangle, prefer-arrow-callback, no-console */
 
 /**
  * Current log level. Purposely not mutable. It's only for dev.
@@ -15,8 +15,8 @@ const levels = ['error', 'warn', 'info', 'debug', 'trace'];
 
 module.exports = {
   _log(level, msg) {
-    if (levels.indexOf(level) <= levels.indexOf(debugLevel) ) {
-      console.log(`\<${level}\> ${msg}`);
+    if (levels.indexOf(level) <= levels.indexOf(debugLevel)) {
+      console.log(`<${level}> ${msg}`);
     }
   },
 
@@ -69,5 +69,5 @@ module.exports = {
     if (levels.indexOf(logLevel) > -1) {
       debugLevel = logLevel;
     }
-  }
+  },
 };

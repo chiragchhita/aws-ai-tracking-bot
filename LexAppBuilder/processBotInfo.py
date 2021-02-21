@@ -1,14 +1,6 @@
 #
 # Copyright 2017-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-#
-# Licensed under the Amazon Software License (the "License"). You may not use this file
-# except in compliance with the License. A copy of the License is located at
-#
-# http://aws.amazon.com/asl/
-#
-# or in the "license" file accompanying this file. This file is distributed on an "AS IS"
-# BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied. See the
-# License for the specific language governing permissions and limitations under the License.
+# SPDX-License-Identifier: MIT-0.
 
 import json
 import decimal
@@ -151,12 +143,14 @@ def log_update(event):
     if "ResetAllMetrics" in intentName:
         print("deleting items for userId: " + event["userId"])
         res = deleteItemsForUser(event["userId"])
-        if res:
+        res2 = deleteRawItemsForUser(event["userId"])
+        if res and res2:
             return clearResponse(True)
         else:
             return clearResponse(False)
 
     elif "ClearMetricsForDate" in intentName:
+        deleteRawItemsForUserOnDay(event["userId"], dayPrefix)
         update = obtainItem(event["userId"], current_datetime)
         if update:
             print("found item for user to delete")
@@ -369,7 +363,7 @@ def putItemRaw(item):
 def appendRawInfo(userId, intentName, dayPrefix, rawValue, rawUnits, rawObject):
     item = {
         'userId': userId,
-        'reported_time': str(datetime.datetime.now().time()),
+        'reported_time': str(datetime.datetime.now()),
         'intentName': intentName,
         'dayPrefix': dayPrefix,
         'rawValue': rawValue,
@@ -406,6 +400,7 @@ def updateItem(model, item):
     )
     return
 
+
 def obtainItem(userId,reportTime):
     try:
         response = tableAggregate.get_item(
@@ -436,6 +431,16 @@ def deleteItem(item):
         }
     )
 
+
+def deleteRawItem(item):
+    return tableRaw.delete_item(
+        Key={
+            'userId': item["userId"],
+            'reported_time': str(item["reported_time"])
+        }
+    )
+
+
 def deleteItemsForUser(userid):
     # Scan the table and delete all items which match the provided userId
     print('Deleting rows...')
@@ -457,8 +462,66 @@ def deleteItemsForUser(userid):
             deleteItem(i)
             count += 1
 
-    print('Deleted {0} rows.'.format(count))
-    if (count > 0):
+    print('Deleted Aggregate {0} rows.'.format(count))
+    if count > 0:
+        return True
+    else:
+        return False
+
+
+def deleteRawItemsForUserOnDay(userid,dayPrefix):
+    # Scan the table and delete all items which match the provided userId
+    print('Deleting raw rows...')
+    count = 0
+
+    response = tableRaw.query(
+        KeyConditionExpression=Key('userId').eq(userid)
+    )
+    for i in response['Items']:
+        if i['dayPrefix'] == dayPrefix:
+            deleteRawItem(i)
+        count += 1
+
+    while 'LastEvaluatedKey' in response:
+        response = table.query(
+            KeyConditionExpression=Key('userId').eq(userid),
+            ExclusiveStartKey=response['LastEvaluatedKey']
+        )
+        for i in response['Items']:
+            if i['dayPrefix'] == dayPrefix:
+                deleteRawItem(i)
+            count += 1
+
+    print('Deleted raw table {0} rows.'.format(count))
+    if count > 0:
+        return True
+    else:
+        return False
+
+
+def deleteRawItemsForUser(userid):
+    # Scan the table and delete all items which match the provided userId
+    print('Deleting raw rows...')
+    count = 0
+
+    response = tableRaw.query(
+        KeyConditionExpression=Key('userId').eq(userid)
+    )
+    for i in response['Items']:
+        deleteRawItem(i)
+        count += 1
+
+    while 'LastEvaluatedKey' in response:
+        response = table.query(
+            KeyConditionExpression=Key('userId').eq(userid),
+            ExclusiveStartKey=response['LastEvaluatedKey']
+        )
+        for i in response['Items']:
+            deleteRawItem(i)
+            count += 1
+
+    print('Deleted raw table {0} rows.'.format(count))
+    if count > 0:
         return True
     else:
         return False

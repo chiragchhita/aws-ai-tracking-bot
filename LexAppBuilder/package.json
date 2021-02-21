@@ -2,10 +2,10 @@
   "name": "lexappbuilder",
   "version": "1.0.0",
   "description": "Creates AWS Lex Bot and associated App",
-  "license": "Amazon Software License",
+  "license": "MIT-0",
   "main": "index.js",
   "dependencies": {
-    "adm-zip": "^0.4.7",
+    "adm-zip": "0.4.7",
     "aws-sdk": "^2.57.0",
     "jsonschema": "^1.1.1",
     "minimist": "^1.2.0",
